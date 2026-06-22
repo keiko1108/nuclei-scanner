@@ -10,17 +10,16 @@ def home():
 @app.route("/scan", methods=["POST"])
 def scan():
     target = request.form["target"]
-
     cmd = [
         "nuclei",
-        "-u",
-        target,
-        "-json-export",
-        "results/output.json"
+        "-u", target,
+        "-json-export", "results/output.json",
+        "-c", "3",          # รันพร้อมกันแค่ 3 thread (ปกติ 25)
+        "-rl", "5",         # ส่ง request แค่ 5 ครั้ง/วินาที
+        "-timeout", "5",    # หมดเวลา 5 วินาที/request
+        "-t", "http/technologies"  # สแกนแค่ category เดียว ไม่สแกนทุก template
     ]
-
     subprocess.run(cmd)
-
     return "Scan completed"
 
 if __name__ == "__main__":
