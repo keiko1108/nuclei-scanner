@@ -1,26 +1,34 @@
 from flask import Flask, request, render_template
 import subprocess
-
-app = Flask(__name__)
-
+import os
+import time
+app = Flask(name)
 @app.route("/")
 def home():
     return render_template("index.html")
-
 @app.route("/scan", methods=["POST"])
 def scan():
     target = request.form["target"]
+    os.makedirs("results", exist_ok=True)
+    output_file = f"results/output_{int(time.time())}.jsonl"
     cmd = [
         "nuclei",
         "-u", target,
-        "-json-export", "results/output.json",
-        "-c", "3",          # รันพร้อมกันแค่ 3 thread (ปกติ 25)
-        "-rl", "5",         # ส่ง request แค่ 5 ครั้ง/วินาที
-        "-timeout", "5",    # หมดเวลา 5 วินาที/request
-        "-t", "http/technologies"  # สแกนแค่ category เดียว ไม่สแกนทุก template
+        "-j",
+        "-o", output_file,
+        "-c", "5",
+        "-rl", "5",
+        "-bs", "10",
+        "-s", "critical",
+        "-silent",
+        "-duc"
     ]
-    subprocess.run(cmd)
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+        if result.returncode != 0:
+            return f"Scan failed:<br><pre>{result.stderr}</pre>"
+    except subprocess.TimeoutExpired:
+        return "Scan timed out"
     return "Scan completed"
-
-if __name__ == "__main__":
+if name == "main":
     app.run(host="0.0.0.0", port=10000)
